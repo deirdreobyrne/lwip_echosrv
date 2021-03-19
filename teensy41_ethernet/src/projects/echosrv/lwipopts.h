@@ -38,7 +38,7 @@
 #ifndef LWIP_PROJECT_LWIPOPTS_H
 #define LWIP_PROJECT_LWIPOPTS_H
 
-// #define ETHARP_SUPPORT_VLAN 1
+#define ETHARP_SUPPORT_VLAN 1
 
 // thd stuff
 //  default was 2 *
@@ -464,7 +464,7 @@
    ---------------------------------------
 */
 
-#define LWIP_DEBUG
+//#define LWIP_DEBUG
 
 #ifdef LWIP_DEBUG
 
@@ -495,6 +495,10 @@
 #define TCP_QLEN_DEBUG   LWIP_DBG_ON
 #define TCP_RST_DEBUG    LWIP_DBG_ON
 #define HTTPD_DEBUG      LWIP_DBG_ON
+
+#define ETHARP_DEBUG     LWIP_DBG_ON
+#define NETIF_DEBUG      LWIP_DBG_ON
+//#define PBUF_DEBUG       LWIP_DBG_ON
 
 #define LWIP_DBG_TYPES_ON         (LWIP_DBG_ON|LWIP_DBG_TRACE|LWIP_DBG_STATE|LWIP_DBG_FRESH|LWIP_DBG_HALT)
 
