@@ -16,6 +16,8 @@
 struct netif vlan3_netif;
 #endif
 
+ip4_addr multicast_addr;
+
 #ifdef LWIP_DEBUG
 void debug_print(const char *msg) {
   Serial.print(msg);
@@ -45,12 +47,15 @@ static void link_status_callback(struct netif *netif)
 // UDP callbacks
 //  fancy would be pbuf recv_q per UDP pcb, if q full, drop and free pbuf
 
-
 // udp echo recv callback
 void udp_callback(void * arg, struct udp_pcb * upcb, struct pbuf * p, const ip_addr_t * addr, u16_t port)
 {
+  struct udp_pcb *pcb;
+  
   if (p == NULL) return;
   udp_sendto(upcb, p, addr, port);
+  pcb = udp_new();
+  udp_sendto_if(pcb, p, &multicast_addr, 77, netif_default);
   pbuf_free(p);
 }
 
@@ -137,22 +142,16 @@ void tcp_echosrv() {
 
 void setup()
 {
-#ifdef DO_VLANS
-  ip4_addr addr, mask, gw;
-#endif
-  
   Serial.begin(115200);
   while (!Serial) delay(100);
 #ifdef LWIP_DEBUG
   set_debug_print(debug_print);
 #endif
 
+  IP4_ADDR(&multicast_addr,239,0,0,1);
   enet_init(NULL, NULL, NULL);
 #ifdef DO_VLANS
-  IP4_ADDR(&addr, 172, 17, 2, 115);
-  IP4_ADDR(&mask, 255, 255, 255, 0);
-  IP4_ADDR(&gw, 172, 17, 2, 1);
-  netif_add_vlan(&vlan3_netif, &addr, &mask, &gw, 3, 0, t41_extra_netif_init, 0);
+  netif_add_vlan(&vlan3_netif, IP_ADDR_ANY, IP_ADDR_ANY, IP_ADDR_ANY, 3, 0, t41_extra_netif_init, 0);
   netif_set_up(&vlan3_netif);
 #endif
   netif_set_status_callback(netif_default, netif_status_callback);
@@ -163,7 +162,7 @@ void setup()
 #ifdef DO_VLANS
   netif_set_status_callback(&vlan3_netif, netif_status_callback);
   netif_set_link_callback(&vlan3_netif, link_status_callback);
-//  dhcp_start(&vlan3_netif);
+  dhcp_start(&vlan3_netif);
   while (!netif_is_link_up(&vlan3_netif)) loop(); // await on link up
 #endif
   
