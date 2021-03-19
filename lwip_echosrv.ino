@@ -51,12 +51,17 @@ static void link_status_callback(struct netif *netif)
 void udp_callback(void * arg, struct udp_pcb * upcb, struct pbuf * p, const ip_addr_t * addr, u16_t port)
 {
   struct udp_pcb *pcb;
+  struct pbuf *pb;
   
   if (p == NULL) return;
+  pb = pbuf_alloc(PBUF_TRANSPORT, p->tot_len, PBUF_RAM);
+  pbuf_take(pb, p->payload, p->tot_len);
   udp_sendto(upcb, p, addr, port);
   pcb = udp_new();
-  udp_sendto_if(pcb, p, &multicast_addr, 77, netif_default);
+  udp_sendto(pcb, pb, &multicast_addr, 77);
   pbuf_free(p);
+  pbuf_free(pb);
+  udp_remove(pcb);
 }
 
 
