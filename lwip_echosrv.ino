@@ -7,8 +7,14 @@
 #include "lwip/udp.h"
 #include "lwip/tcp.h"
 
+#define DO_VLANS
+
 #define swap2 __builtin_bswap16
 #define swap4 __builtin_bswap32
+
+#ifdef DO_VLANS
+struct netif vlan3_netif;
+#endif
 
 #ifdef LWIP_DEBUG
 void debug_print(const char *msg) {
@@ -19,12 +25,21 @@ void debug_print(const char *msg) {
 static void netif_status_callback(struct netif *netif)
 {
   static char str1[IP4ADDR_STRLEN_MAX], str2[IP4ADDR_STRLEN_MAX], str3[IP4ADDR_STRLEN_MAX];
-  Serial.printf("CHECK 2 netif status changed: ip %s, mask %s, gw %s\n", ip4addr_ntoa_r(netif_ip_addr4(netif), str1, IP4ADDR_STRLEN_MAX), ip4addr_ntoa_r(netif_ip_netmask4(netif), str2, IP4ADDR_STRLEN_MAX), ip4addr_ntoa_r(netif_ip_gw4(netif), str3, IP4ADDR_STRLEN_MAX));
+  Serial.printf("netif %c%c status changed: ip %s, mask %s, gw %s\n", netif->name[0], netif->name[1], ip4addr_ntoa_r(netif_ip_addr4(netif), str1, IP4ADDR_STRLEN_MAX), ip4addr_ntoa_r(netif_ip_netmask4(netif), str2, IP4ADDR_STRLEN_MAX), ip4addr_ntoa_r(netif_ip_gw4(netif), str3, IP4ADDR_STRLEN_MAX));
 }
 
 static void link_status_callback(struct netif *netif)
 {
-  Serial.printf("CHECK 2 enet link status: %s\n", netif_is_link_up(netif) ? "up" : "down");
+  Serial.printf("enet netif %c%c link status: %s\n", netif->name[0], netif->name[1], netif_is_link_up(netif) ? "up" : "down");
+#ifdef DO_VLANS
+  if (netif == netif_default) {
+    if (netif_is_link_up(netif_default)) {
+      netif_set_link_up(&vlan3_netif);
+    } else {
+      netif_set_link_down(&vlan3_netif);
+    }
+  }
+#endif
 }
 
 // UDP callbacks
@@ -120,9 +135,18 @@ void tcp_echosrv() {
   // fall through to main ether_poll loop ....
 }
 
+err_t null_netif_init(struct netif *netif) {
+  Serial.print("No netif init for ");
+  Serial.print(netif->name[0]);
+  Serial.println(netif->name[1]);
+}
 
 void setup()
 {
+#ifdef DO_VLANS
+  ip4_addr addr, mask, gw;
+#endif
+  
   Serial.begin(115200);
   while (!Serial) delay(100);
 #ifdef LWIP_DEBUG
@@ -130,13 +154,27 @@ void setup()
 #endif
 
   enet_init(NULL, NULL, NULL);
+#ifdef DO_VLANS
+  IP4_ADDR(&addr, 172, 17, 2, 115);
+  IP4_ADDR(&mask, 255, 255, 255, 0);
+  IP4_ADDR(&gw, 172, 17, 2, 1);
+  t41_extra_netif_init(&vlan3_netif, 'e', '1');
+  netif_set_vlan_id(&vlan3_netif, 3);
+  netif_set_up(&vlan3_netif);
+  netif_add(&vlan3_netif, &addr, &mask, &gw, 0, null_netif_init, 0);
+#endif
   netif_set_status_callback(netif_default, netif_status_callback);
   netif_set_link_callback(netif_default, link_status_callback);
-  netif_set_up(netif_default);
   netif_set_vlan_id(netif_default, 1);
-  
+  netif_set_up(netif_default);
   dhcp_start(netif_default);
-
+#ifdef DO_VLANS
+  netif_set_status_callback(&vlan3_netif, netif_status_callback);
+  netif_set_link_callback(&vlan3_netif, link_status_callback);
+//  dhcp_start(&vlan3_netif);
+  while (!netif_is_link_up(&vlan3_netif)) loop(); // await on link up
+#endif
+  
   while (!netif_is_link_up(netif_default)) loop(); // await on link up
   udp_echosrv();
   tcp_echosrv();
