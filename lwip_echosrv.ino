@@ -135,11 +135,16 @@ void tcp_echosrv() {
   // fall through to main ether_poll loop ....
 }
 
+#ifdef DO_VLANS
 err_t null_netif_init(struct netif *netif) {
   Serial.print("No netif init for ");
   Serial.print(netif->name[0]);
-  Serial.println(netif->name[1]);
+  Serial.print(netif->name[1]);
+  Serial.print(" vlan id 0x");
+  Serial.println(netif->tci, HEX);
+  return ERR_OK;
 }
+#endif
 
 void setup()
 {
@@ -159,9 +164,8 @@ void setup()
   IP4_ADDR(&mask, 255, 255, 255, 0);
   IP4_ADDR(&gw, 172, 17, 2, 1);
   t41_extra_netif_init(&vlan3_netif, 'e', '1');
-  netif_set_vlan_id(&vlan3_netif, 3);
   netif_set_up(&vlan3_netif);
-  netif_add(&vlan3_netif, &addr, &mask, &gw, 0, null_netif_init, 0);
+  netif_add_vlan(&vlan3_netif, &addr, &mask, &gw, 3, 0, null_netif_init, 0);
 #endif
   netif_set_status_callback(netif_default, netif_status_callback);
   netif_set_link_callback(netif_default, link_status_callback);
