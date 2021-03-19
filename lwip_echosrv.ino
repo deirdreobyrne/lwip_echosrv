@@ -9,15 +9,19 @@
 #define swap2 __builtin_bswap16
 #define swap4 __builtin_bswap32
 
+void debug_print(const char *msg) {
+  Serial.print(msg);
+}
+
 static void netif_status_callback(struct netif *netif)
 {
   static char str1[IP4ADDR_STRLEN_MAX], str2[IP4ADDR_STRLEN_MAX], str3[IP4ADDR_STRLEN_MAX];
-  Serial.printf("CHECK netif status changed: ip %s, mask %s, gw %s\n", ip4addr_ntoa_r(netif_ip_addr4(netif), str1, IP4ADDR_STRLEN_MAX), ip4addr_ntoa_r(netif_ip_netmask4(netif), str2, IP4ADDR_STRLEN_MAX), ip4addr_ntoa_r(netif_ip_gw4(netif), str3, IP4ADDR_STRLEN_MAX));
+  Serial.printf("CHECK 2 netif status changed: ip %s, mask %s, gw %s\n", ip4addr_ntoa_r(netif_ip_addr4(netif), str1, IP4ADDR_STRLEN_MAX), ip4addr_ntoa_r(netif_ip_netmask4(netif), str2, IP4ADDR_STRLEN_MAX), ip4addr_ntoa_r(netif_ip_gw4(netif), str3, IP4ADDR_STRLEN_MAX));
 }
 
 static void link_status_callback(struct netif *netif)
 {
-  Serial.printf("CHECK enet link status: %s\n", netif_is_link_up(netif) ? "up" : "down");
+  Serial.printf("CHECK 2 enet link status: %s\n", netif_is_link_up(netif) ? "up" : "down");
 }
 
 // UDP callbacks
@@ -118,12 +122,14 @@ void setup()
 {
   Serial.begin(115200);
   while (!Serial) delay(100);
+  set_debug_print(debug_print);
 
   enet_init(NULL, NULL, NULL);
   netif_set_status_callback(netif_default, netif_status_callback);
   netif_set_link_callback(netif_default, link_status_callback);
   netif_set_up(netif_default);
-
+  netif_set_vlan_id(netif_default, 1);
+  
   dhcp_start(netif_default);
 
   while (!netif_is_link_up(netif_default)) loop(); // await on link up

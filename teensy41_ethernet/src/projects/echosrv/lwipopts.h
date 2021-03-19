@@ -464,7 +464,7 @@
    ---------------------------------------
 */
 
-//#define LWIP_DEBUG
+#define LWIP_DEBUG
 
 #ifdef LWIP_DEBUG
 
