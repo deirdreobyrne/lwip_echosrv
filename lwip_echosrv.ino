@@ -1,5 +1,6 @@
 // lwip UDP and TCP echo server on port 7
 
+#include "lwipopts.h"
 #include "lwip_t41.h"
 #include "lwip/inet.h"
 #include "lwip/dhcp.h"
@@ -9,9 +10,11 @@
 #define swap2 __builtin_bswap16
 #define swap4 __builtin_bswap32
 
+#ifdef LWIP_DEBUG
 void debug_print(const char *msg) {
   Serial.print(msg);
 }
+#endif
 
 static void netif_status_callback(struct netif *netif)
 {
@@ -122,7 +125,9 @@ void setup()
 {
   Serial.begin(115200);
   while (!Serial) delay(100);
+#ifdef LWIP_DEBUG
   set_debug_print(debug_print);
+#endif
 
   enet_init(NULL, NULL, NULL);
   netif_set_status_callback(netif_default, netif_status_callback);
