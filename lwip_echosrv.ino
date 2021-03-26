@@ -56,6 +56,7 @@ void udp_callback(void * arg, struct udp_pcb * upcb, struct pbuf * p, const ip_a
   if (p == NULL) return;
   pb = pbuf_alloc(PBUF_TRANSPORT, p->tot_len, PBUF_RAM);
   pbuf_take(pb, p->payload, p->tot_len);
+  upcb->tos = 0xB8; // DOB THIS IS WHERE TOS IS SET?
   udp_sendto(upcb, p, addr, port);
   pcb = udp_new();
   udp_sendto(pcb, pb, &multicast_addr, 77);
