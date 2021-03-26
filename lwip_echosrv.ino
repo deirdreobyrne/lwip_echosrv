@@ -1,13 +1,4 @@
-// lwip UDP and TCP echo server on port 7
-
-
-//
-// TODO - CHECK PRIORITY WORKS
-//
-//      - CHECK THIS WORKS WITH A SLOWER CLOCK
-//
-
-
+// lwip test framework
 
 #include "lwipopts.h"
 #include "lwip_t41.h"
